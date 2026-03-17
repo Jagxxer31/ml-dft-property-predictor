@@ -4,8 +4,6 @@ import xgboost as xgb
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# config
-
 CSV_PATH = "dataset2.csv"
 RANDOM_STATE = 42
 N_SPLITS = 10
@@ -70,12 +68,8 @@ assert not missing, f"Missing columns: {missing}"
 
 X = df[feature_cols]
 
-# log delta gap
-
 y_delta = df["delta_gap_ev"]
 y_log = np.log(y_delta + 1e-6)
-
-# model
 
 model = xgb.XGBRegressor(
     objective="reg:squarederror",
@@ -87,8 +81,6 @@ model = xgb.XGBRegressor(
     subsample=0.8,
     colsample_bytree=0.8,
 )
-
-# 10-fold cv
 
 kf = KFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
 
@@ -138,8 +130,6 @@ model.get_booster().save_model(MODEL_OUT)
 
 from xgboost import XGBRegressor
 import joblib
-
-# final model
 
 final_model = XGBRegressor(
     n_estimators=500,          

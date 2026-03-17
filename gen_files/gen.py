@@ -3,9 +3,6 @@ import requests
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-# ------------------------------
-# Step 0: Settings
-# ------------------------------
 extra_molecules_30 = [
     "ammonia",
     "hydrogen cyanide",
@@ -39,8 +36,6 @@ extra_molecules_30 = [
     "thiirane"
 ]
 
-
-
 all_molecules = extra_molecules_30
 all_molecules=[
     "maleic acid"
@@ -51,9 +46,6 @@ GJF_DIR = "d_pbe_gjf"
 os.makedirs(SDF_DIR, exist_ok=True)
 os.makedirs(GJF_DIR, exist_ok=True)
 
-# ------------------------------
-# Step 1: Fetch SDF from PubChem
-# ------------------------------
 def fetch_sdf(mol_name):
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{mol_name}/SDF"
     r = requests.get(url)
@@ -72,9 +64,6 @@ for mol in all_molecules:
         sdf_paths.append(p)
         print("Added sdf for "+os.path.splitext(os.path.basename(mol))[0])
 
-# ------------------------------
-# Step 2: Convert SDF → Gaussian (.gjf)
-# ------------------------------
 ROUTE_SECTION = "#PBEPBE/6-31G(d) SCF=Tight OPT=Loose Pop=Minimal"
 CHARGE_MULT = "0 1"
 
@@ -84,14 +73,11 @@ for sdf_file in sdf_paths:
         print(f"[FAIL] RDKit could not read {sdf_file}")
         continue
 
-    # 🔴 CRITICAL FIX 1: add hydrogens explicitly
     mol = Chem.AddHs(mol)
 
-    # 🔴 CRITICAL FIX 2: always generate reliable 3D geometry
     AllChem.EmbedMolecule(mol, AllChem.ETKDG())
     AllChem.UFFOptimizeMolecule(mol)
 
-    # Sanity check
     if mol.GetNumAtoms() < 3:
         print(f"[SKIP] Suspicious molecule: {sdf_file}")
         continue
@@ -99,7 +85,6 @@ for sdf_file in sdf_paths:
     base = os.path.splitext(os.path.basename(sdf_file))[0]
     gjf_path = os.path.join(GJF_DIR, f"{base}.gjf")
 
-    # 🔴 CRITICAL FIX 3: Windows Gaussian-safe encoding
     with open(gjf_path, "w", encoding="mbcs") as f:
         f.write("%nprocshared=2\n")
         f.write(ROUTE_SECTION + "\n\n")

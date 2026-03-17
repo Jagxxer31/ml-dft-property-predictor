@@ -4,7 +4,6 @@ import pandas as pd
 
 HARTREE_TO_EV = 27.211386
 
-# ---------- Common eigenvalue parser ----------
 def extract_orbitals(lines):
     occ = []
     virt = []
@@ -42,7 +41,6 @@ def add_structural_descriptors(df, sdf_dir):
     df["num_rings"] = num_rings
     df["num_heteroatoms"] = num_hetero
 
-# ---------- PBE parser ----------
 def parse_pbe_out(filepath):
     data = {
         "molecule": os.path.basename(filepath).replace(".out", ""),
@@ -58,7 +56,6 @@ def parse_pbe_out(filepath):
         "pbe_mu_y": None,
         "pbe_mu_z": None,
     }
-
 
     with open(filepath, "r", errors="ignore") as f:
         lines = f.readlines()
@@ -93,8 +90,6 @@ def parse_pbe_out(filepath):
 
     return data
 
-
-# ---------- HSE parser (gap only) ----------
 def parse_hse_out(filepath):
     molecule = os.path.basename(filepath).replace(".out", "")
 
@@ -110,9 +105,6 @@ def parse_hse_out(filepath):
         "hse_gap_ev": round(orb["gap_ev"], 6)
     }
 
-
-
-# ---------- Main workflow ----------
 pbe_dir = "pbe_log"
 hse_dir = "hse_log"
 
@@ -130,7 +122,6 @@ for file in os.listdir(hse_dir):
         if rec:
             hse_records[rec["molecule"]] = rec
 
-# ---------- Merge ----------
 final_rows = []
 
 for mol, pbe_data in pbe_records.items():
@@ -151,16 +142,12 @@ df.to_csv("dataset2.csv", index=False)
 #print(df.head())
 print(f"\nFinal dataset size: {len(df)} molecules")
 
-# 1. No NaNs
 assert not df.isna().any().any()
 
-# 2. Positive gaps
 assert (df["pbe_gap_ev"] > 0).all()
 assert (df["hse_gap_ev"] > 0).all()
 
-# 3. HSE > PBE
 assert (df["hse_gap_ev"] > df["pbe_gap_ev"]).all()
 
-# 4. Dataset size
 print("Final dataset size:", len(df))
 

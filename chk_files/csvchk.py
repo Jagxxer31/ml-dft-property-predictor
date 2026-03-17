@@ -3,11 +3,11 @@ import numpy as np
 
 CSV_FILE = "pbe_hse_dataset.csv"
 
-# Tolerances
-GAP_TOL = 0.05      # eV (numerical tolerance)
-MAX_GAP = 20.0      # eV (hard sanity cap)
 
-# Required columns
+GAP_TOL = 0.05     
+MAX_GAP = 20.0      
+
+
 REQUIRED_COLUMNS = [
     "molecule",
     "num_atoms",
@@ -30,7 +30,6 @@ def warn(msg):
 def ok(msg):
     print(f"[OK] {msg}")
 
-# ---------------- Load CSV ----------------
 try:
     df = pd.read_csv(CSV_FILE)
 except Exception as e:
@@ -38,13 +37,11 @@ except Exception as e:
 
 ok(f"Loaded CSV with {len(df)} molecules")
 
-# ---------------- Column checks ----------------
 missing_cols = set(REQUIRED_COLUMNS) - set(df.columns)
 if missing_cols:
     fail(f"Missing columns: {missing_cols}")
 ok("All required columns present")
 
-# ---------------- Basic integrity ----------------
 if df.isna().any().any():
     fail("Dataset contains NaN values")
 ok("No NaN values")
@@ -54,7 +51,6 @@ if df["molecule"].duplicated().any():
     fail(f"Duplicate molecule names found: {dups}")
 ok("No duplicate molecules")
 
-# ---------------- Physical sanity ----------------
 if not (df["num_atoms"] > 0).all():
     fail("Invalid atom count detected")
 ok("Atom counts valid")
@@ -70,26 +66,22 @@ if not (df["hse_gap_ev"] > 0).all():
     fail("Non-positive HSE gap detected")
 ok("HSE gaps positive")
 
-# HSE >= PBE (allow tolerance)
 if not (df["hse_gap_ev"] >= df["pbe_gap_ev"] - GAP_TOL).all():
     bad = df[df["hse_gap_ev"] < df["pbe_gap_ev"] - GAP_TOL]
     fail(f"HSE gap significantly smaller than PBE for: {bad['molecule'].tolist()}")
 ok("HSE ≥ PBE gaps (within tolerance)")
 
-# Delta-gap consistency
 delta_calc = df["hse_gap_ev"] - df["pbe_gap_ev"]
 if not np.allclose(delta_calc, df["delta_gap_ev"], atol=1e-6):
     fail("delta_gap_ev inconsistent with HSE − PBE")
 ok("delta_gap_ev consistent")
 
-# ---------------- Outlier detection ----------------
 if (df["pbe_gap_ev"] > MAX_GAP).any():
     warn("Very large PBE gap detected (>20 eV)")
 
 if (df["hse_gap_ev"] > MAX_GAP).any():
     warn("Very large HSE gap detected (>20 eV)")
 
-# ---------------- ML sanity ----------------
 numeric_cols = df.select_dtypes(include=[np.number])
 
 constant_cols = [

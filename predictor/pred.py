@@ -6,15 +6,8 @@ import joblib
 
 HARTREE_TO_EV = 27.211386245988
 
-# ===============================
-# Load trained ML model
-# ===============================
 model = joblib.load("xgb_delta_hse_final.pkl")
 feature_names = joblib.load("xgb_feature_names.pkl")
-
-# ===============================
-# Gaussian parsing helpers
-# ===============================
 
 def parse_orbitals(lines):
     occ = []
@@ -42,8 +35,6 @@ def parse_orbitals(lines):
 
     return homo, homo_minus1, lumo, lumo_plus1
 
-
-
 def parse_energy(lines):
     for line in lines:
         if "SCF Done" in line:
@@ -52,20 +43,11 @@ def parse_energy(lines):
 
 
 def parse_dipole(lines, fname=None):
-    """
-    Parses the dipole moment from a Gaussian .out file.
-    Handles both single-line and multi-line Gaussian outputs.
-    
-    Returns:
-        dipole (float): total dipole magnitude in Debye
-        mu (list of floats): [mu_x, mu_y, mu_z]
-    """
+   
     mu = None
 
     for i, line in enumerate(lines):
-        # Multi-line format (most common)
         if "Dipole moment (field-independent basis, Debye)" in line:
-            # Next line should contain X= Y= Z= Tot=
             if i + 1 < len(lines):
                 next_line = lines[i + 1]
                 nums = re.findall(r"[-+]?\d*\.\d+|\d+", next_line)
@@ -73,7 +55,6 @@ def parse_dipole(lines, fname=None):
                     mu = [float(nums[0]), float(nums[1]), float(nums[2])]
                     break
 
-        # Alternative single-line formats
         elif "Dipole moment" in line and "Debye" in line:
             nums = re.findall(r"[-+]?\d*\.\d+|\d+", line)
             if len(nums) >= 3:
@@ -85,7 +66,6 @@ def parse_dipole(lines, fname=None):
                 mu = [float(nums[0]), float(nums[1]), float(nums[2])]
                 break
 
-    # If dipole not found, assume zero (symmetric molecules)
     if mu is None:
         if fname:
             print(f"WARNING: Dipole not found in {fname}, setting to zero")
@@ -105,11 +85,6 @@ def parse_num_atoms(lines):
 def parse_gap_from_orbitals(lines):
     homo, _, lumo, _ = parse_orbitals(lines)
     return (lumo - homo) * HARTREE_TO_EV
-
-
-# ===============================
-# Feature construction
-# ===============================
 
 def extract_features_from_out(filepath):
     with open(filepath, "r", errors="ignore") as f:
@@ -147,11 +122,6 @@ def extract_features_from_out(filepath):
 
     return features
 
-
-# ===============================
-# Main prediction loop
-# ===============================
-
 def predict_folder(pbe_out_dir, hse_out_dir):
     results = []
 
@@ -176,8 +146,7 @@ def predict_folder(pbe_out_dir, hse_out_dir):
                     hse_lines = f.readlines()
                 actual_hse_gap = parse_gap_from_orbitals(hse_lines)
 
-                # compute error %
-                if actual_hse_gap > 1e-6:  # avoid division by zero
+                if actual_hse_gap > 1e-6:  
                     error_percent = 100.0 * abs(hse_gap_pred - actual_hse_gap) / actual_hse_gap
 
             results.append({
@@ -193,12 +162,6 @@ def predict_folder(pbe_out_dir, hse_out_dir):
             print(f"FAILED: {fname} → {e}")
 
     return pd.DataFrame(results)
-
-
-
-# ===============================
-# Run
-# ===============================
 
 if __name__ == "__main__":
     pbe_dir = "pbe_log"

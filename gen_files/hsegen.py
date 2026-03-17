@@ -1,9 +1,6 @@
 import os
 import re
 
-# =========================
-# CONFIGURATION
-# =========================
 PBE_OUT_DIR = "d_pbe_out"
 HSE_GJF_DIR = "d_hse_gjf"
 
@@ -15,19 +12,14 @@ MULTIPLICITY = 1
 
 os.makedirs(HSE_GJF_DIR, exist_ok=True)
 
-# Atomic number → element symbol
 PERIODIC_TABLE = {
     1: "H", 6: "C", 7: "N", 8: "O", 9: "F",
     15: "P", 16: "S", 17: "Cl",
     35: "Br", 53: "I"
 }
 
-# =========================
-# FUNCTIONS
-# =========================
 def optimization_converged(text):
     return "Optimization completed." in text
-
 
 def extract_final_geometry(text):
     lines = text.splitlines()
@@ -38,12 +30,10 @@ def extract_final_geometry(text):
         line = lines[i]
 
         if "Standard orientation:" in line or "Input orientation:" in line:
-            # Move to first dashed line
             i += 1
             while i < len(lines) and "-----" not in lines[i]:
                 i += 1
 
-            # Skip dashed + header lines until second dashed line
             dash_count = 0
             while i < len(lines):
                 if "-----" in lines[i]:
@@ -53,7 +43,6 @@ def extract_final_geometry(text):
                         break
                 i += 1
 
-            # Now read geometry
             geom = []
             while i < len(lines):
                 if "-----" in lines[i]:
@@ -66,7 +55,7 @@ def extract_final_geometry(text):
                         element = PERIODIC_TABLE.get(atomic_number, f"X{atomic_number}")
                         geom.append((element, x, y, z))
                     except ValueError:
-                        pass  # skip lines that can't be parsed
+                        pass  
                 i += 1
 
             if geom:
@@ -95,9 +84,6 @@ def write_hse_gjf(mol_name, geometry):
 
         f.write("\n")
 
-# =========================
-# MAIN LOOP
-# =========================
 failed = []
 
 for filename in os.listdir(PBE_OUT_DIR):
@@ -128,7 +114,6 @@ for filename in os.listdir(PBE_OUT_DIR):
         failed.append(mol_name)
 
 print("\nSummary")
-print("--------")
 print(f"Total failed/skipped: {len(failed)}")
 if failed:
     print("Failed molecules:", failed)
